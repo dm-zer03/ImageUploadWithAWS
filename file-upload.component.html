@@ -1,0 +1,112 @@
+<div class="upload-page">
+
+  <!-- ─── Upload Zone ─────────────────────────────────────────────── -->
+  <div class="upload-zone"
+       [class.drag-over]="isDragOver"
+       (dragover)="onDragOver($event)"
+       (dragleave)="onDragLeave()"
+       (drop)="onDrop($event)">
+
+    <div class="upload-icon">☁️</div>
+    <h3>Drag & Drop files here</h3>
+    <p>or</p>
+
+    <label class="btn btn-primary">
+      Browse Files
+      <input type="file" [accept]="acceptedTypes" multiple (change)="onFileSelected($event)" hidden />
+    </label>
+
+    <p class="hint">Supported: Images, PDF, DOCX, XLSX, CSV, TXT · Max {{ maxFileSizeMB }}MB per file</p>
+  </div>
+
+  <!-- ─── File Queue ───────────────────────────────────────────────── -->
+  <div class="file-queue" *ngIf="fileItems.length > 0">
+    <div class="queue-header">
+      <h4>Files ({{ fileItems.length }})</h4>
+      <div class="queue-actions">
+        <button class="btn btn-primary" (click)="uploadAll()"
+                [disabled]="!fileItems.some(f => f.status === 'pending')">
+          Upload All
+        </button>
+        <button class="btn btn-ghost" (click)="clearCompleted()">Clear Done</button>
+      </div>
+    </div>
+
+    <div class="file-item" *ngFor="let item of fileItems; let i = index">
+
+      <!-- Preview / Icon -->
+      <div class="file-thumb">
+        <img *ngIf="item.preview" [src]="item.preview" alt="preview" />
+        <span *ngIf="!item.preview" class="file-icon">{{ getFileIcon(item.file.name) }}</span>
+      </div>
+
+      <!-- Info -->
+      <div class="file-info">
+        <span class="file-name">{{ item.file.name }}</span>
+        <span class="file-size">{{ formatSize(item.file.size) }}</span>
+
+        <!-- Progress bar -->
+        <div class="progress-bar" *ngIf="item.status === 'uploading'">
+          <div class="progress-fill" [style.width.%]="item.progress"></div>
+        </div>
+
+        <span class="status-badge" [ngClass]="item.status">
+          <ng-container [ngSwitch]="item.status">
+            <span *ngSwitchCase="'pending'">⏳ Pending</span>
+            <span *ngSwitchCase="'uploading'">⬆️ {{ item.progress }}%</span>
+            <span *ngSwitchCase="'complete'">✅ Uploaded</span>
+            <span *ngSwitchCase="'error'">❌ {{ item.error }}</span>
+          </ng-container>
+        </span>
+      </div>
+
+      <!-- Actions -->
+      <div class="file-actions">
+        <button class="btn btn-sm btn-primary"
+                *ngIf="item.status === 'pending'"
+                (click)="uploadFile(item)">Upload</button>
+        <button class="btn btn-sm btn-ghost" (click)="removeItem(i)">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Uploaded Files List ──────────────────────────────────────── -->
+  <div class="uploaded-files">
+    <div class="section-header">
+      <h4>Uploaded Files</h4>
+      <button class="btn btn-ghost btn-sm" (click)="loadUploadedFiles()">🔄 Refresh</button>
+    </div>
+
+    <div class="loading" *ngIf="isLoadingFiles">Loading files...</div>
+
+    <div class="empty" *ngIf="!isLoadingFiles && uploadedFiles.length === 0">
+      No files uploaded yet.
+    </div>
+
+    <table *ngIf="uploadedFiles.length > 0">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Size</th>
+          <th>Last Modified</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let file of uploadedFiles">
+          <td>
+            <span class="file-icon">{{ getFileIcon(file.fileName) }}</span>
+            {{ file.fileName }}
+          </td>
+          <td>{{ formatSize(file.fileSize) }}</td>
+          <td>{{ file.lastModified | date:'dd MMM yyyy, hh:mm a' }}</td>
+          <td>
+            <a [href]="file.url" target="_blank" class="btn btn-sm btn-ghost">View</a>
+            <button class="btn btn-sm btn-danger" (click)="deleteFile(file)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
